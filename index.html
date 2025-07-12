@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Claude Prompt Generator</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <button id="toggleTheme">🌓 Toggle Theme</button>
+    <h1>🛠️ Claude / V0 Prompt Generator</h1>
+
+    <form class="form-grid">
+      <h2>📝 Screen & Feature Info</h2>
+      <label>Screen Name:</label>
+      <input
+        type="text"
+        id="screenName"
+        placeholder="e.g., CustomerManagement"
+      />
+
+      <label>Short Feature Description:</label>
+      <input
+        type="text"
+        id="featureDesc"
+        placeholder="e.g., Manage customer/vendor accounts"
+      />
+
+      <label>Required Components (comma-separated):</label>
+      <input
+        type="text"
+        id="components"
+        placeholder="e.g., Table, Filter bar, Modals, Toasts"
+      />
+
+      <label>PocketBase Collections (comma-separated):</label>
+      <input
+        type="text"
+        id="collections"
+        placeholder="e.g., users, tickets, orders"
+      />
+
+      <h2>🧩 Reusables & UI Guidelines</h2>
+      <label
+        >Reusable Components/Services/Hooks to Avoid (comma-separated):</label
+      >
+      <input
+        type="text"
+        id="reusable"
+        placeholder="e.g., OrderCard, useCurrentUser, orderService.js"
+      />
+
+      <label>Custom Design Guidelines:</label>
+      <textarea
+        id="designGuide"
+        placeholder="Enter your custom Tailwind and UI rules here..."
+      ></textarea>
+
+      <label>Role:</label>
+      <select id="role">
+        <option value="admin">Admin</option>
+        <option value="vendor">Vendor</option>
+        <option value="agent">Agent</option>
+        <option value="csr">CSR</option>
+        <option value="customer">Customer</option>
+      </select>
+
+      <h2>🎯 Output</h2>
+      <div class="button-group">
+        <button type="button" onclick="generatePrompt()">
+          ⚙️ Generate Prompt
+        </button>
+        <button type="button" onclick="copyToClipboard()">📋 Copy</button>
+        <button type="button" onclick="savePrompt()">💾 Save</button>
+        <button type="button" onclick="loadPrompt()">📂 Load</button>
+        <button type="button" onclick="downloadPrompt()">
+          ⬇️ Export as .md
+        </button>
+      </div>
+      <textarea
+        id="output"
+        placeholder="Generated prompt will appear here..."
+      ></textarea>
+    </form>
+
+    <script src="app.js"></script>
+    <script>
+      document.getElementById("toggleTheme").onclick = () => {
+        document.body.classList.toggle("dark");
+      };
+    </script>
+  </body>
+</html>
