@@ -2,91 +2,1832 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Claude Prompt Generator</title>
-    <link rel="stylesheet" href="style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prompt Studio</title>
+    <link rel="icon" href="favicon.png" type="image/png" />
+    <!-- manifest.json -->
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#2563eb" />
+
+    <!-- Local CodeMirror Styles -->
+    <link rel="stylesheet" href="codemirror.css" />
+
+    <!-- CSS Variables & Shared Styles -->
+    <style>
+      /* =============== GLOBALS & DARK MODE =============== */
+      :root {
+        --bg: #fff;
+        --text: #111;
+        --muted: #6b7280;
+        --accent: #2563eb;
+        --border: #e6e9ef;
+        --dark-bg: #111827;
+        --dark-text: #f9fafb;
+        --dark-input: #1f2937;
+        --dark-border: #374151;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--text);
+        transition: background 0.3s, color 0.3s;
+        font-family: system-ui, sans-serif;
+      }
+
+      body.dark {
+        --bg: var(--dark-bg);
+        --text: var(--dark-text);
+        --border: var(--dark-border);
+      }
+
+      #toggleTheme {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        padding: 6px 10px;
+        font-size: 0.9rem;
+        background: var(--border);
+        color: var(--text);
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        z-index: 100;
+      }
+
+      body.dark #toggleTheme {
+        background: var(--dark-border);
+        color: var(--dark-text);
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1rem;
+      }
+
+      /* =============== TAB SYSTEM =============== */
+      .tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 1rem;
+        background: var(--bg);
+      }
+
+      .tab-btn {
+        padding: 12px 16px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--muted);
+        border-bottom: 3px solid transparent;
+      }
+
+      .tab-btn.active {
+        color: var(--accent);
+        border-bottom: 3px solid var(--accent);
+      }
+
+      .tab-content {
+        display: none;
+        padding: 1rem 0;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      /* =============== MODULE 1: CLAUDE GENERATOR (SCOPED) =============== */
+      .gen-claude h1,
+      .gen-claude h2,
+      .gen-claude h3 {
+        font-family: system-ui, sans-serif;
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .gen-claude h1 {
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+      }
+
+      .gen-claude h2 {
+        font-size: 1.2rem;
+        color: #333;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 4px;
+      }
+
+      .gen-claude label {
+        font-weight: 600;
+        margin-top: 1rem;
+        display: block;
+        color: var(--text);
+      }
+
+      .gen-claude input,
+      .gen-claude select,
+      .gen-claude textarea {
+        width: 100%;
+        padding: 10px;
+        margin: 8px 0 16px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 1rem;
+        background-color: #f9f9f9;
+        color: var(--text);
+        box-sizing: border-box;
+      }
+
+      body.dark .gen-claude input,
+      body.dark .gen-claude select,
+      body.dark .gen-claude textarea {
+        background-color: var(--dark-input);
+        border-color: var(--dark-border);
+        color: var(--dark-text);
+      }
+
+      .gen-claude textarea {
+        height: 120px;
+        font-family: monospace;
+      }
+
+      #output {
+        height: 400px;
+        background-color: #f1f1f1;
+        font-family: monospace;
+        white-space: pre-wrap;
+      }
+
+      body.dark #output {
+        background-color: #1e293b;
+        color: #f8fafc;
+      }
+
+      .gen-claude .button-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .gen-claude button {
+        padding: 10px 16px;
+        background-color: #4f46e5;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        margin: 4px;
+        transition: background 0.2s ease;
+      }
+
+      .gen-claude button:hover {
+        background-color: #3730a3;
+      }
+
+      body.dark .gen-claude button {
+        background-color: #6366f1;
+      }
+
+      body.dark .gen-claude button:hover {
+        background-color: #4f46e5;
+      }
+
+      /* =============== MODULE 2: MERGE BUILDER (SCOPED) =============== */
+      .gen-merge {
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      }
+
+      .gen-merge .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+      }
+
+      .gen-merge .title h1,
+      .gen-merge .title h2 {
+        font-size: 20px;
+        margin: 0;
+        word-break: break-word;
+      }
+
+      .gen-merge .lead {
+        color: var(--muted);
+        margin: 4px 0 0;
+        font-size: 13px;
+      }
+
+      .gen-merge .toolbar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .gen-merge .layout {
+        display: grid;
+        grid-template-columns: 1fr 440px;
+        gap: 16px;
+      }
+
+      .gen-merge .layout > * {
+        min-width: 0;
+      }
+
+      /* Hide advanced section when checkbox is unchecked */
+      #advanced-section {
+        margin-top: 12px;
+        transition: opacity 0.2s ease;
+      }
+
+      #advanced-section.hidden {
+        display: none;
+      }
+
+      #advanced-section {
+        opacity: 1;
+        transition: opacity 0.2s ease, height 0.2s ease;
+        overflow: hidden;
+      }
+
+      #advanced-section.hidden {
+        opacity: 0;
+        height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none;
+      }
+
+      .gen-merge .card {
+        background: #fff;
+        border: 1px solid var(--border);
+        padding: 14px;
+        border-radius: 12px;
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
+        overflow-wrap: break-word;
+      }
+
+      body.dark .gen-merge .card {
+        background: var(--dark-bg);
+        border-color: var(--dark-border);
+      }
+
+      .gen-merge label {
+        display: block;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      body.dark .gen-merge label {
+        color: #9ca3af;
+      }
+
+      .gen-merge input[type="text"],
+      .gen-merge textarea,
+      .gen-merge select {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: transparent;
+        font-size: 13px;
+        color: var(--text);
+      }
+
+      body.dark .gen-merge input,
+      body.dark .gen-merge textarea,
+      body.dark .gen-merge select {
+        background: var(--dark-input);
+        border-color: var(--dark-border);
+        color: var(--dark-text);
+      }
+
+      .gen-merge textarea {
+        min-height: 100px;
+        resize: vertical;
+      }
+
+      .gen-merge .file-drop {
+        border: 2px dashed var(--border);
+        padding: 12px;
+        text-align: center;
+        border-radius: 8px;
+        color: var(--muted);
+        cursor: pointer;
+        word-break: break-word;
+      }
+
+      body.dark .gen-merge .file-drop {
+        border-color: var(--dark-border);
+        color: #9ca3af;
+      }
+
+      .gen-merge .row {
+        margin-top: 12px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .gen-merge .checkbox-inline {
+        margin-left: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .gen-merge .stats {
+        margin-top: 12px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .gen-merge .stat {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .gen-merge .badge {
+        background: var(--border);
+        padding: 6px 8px;
+        border-radius: 8px;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .gen-merge .badge.ok {
+        background: #d1fae5;
+      }
+
+      .gen-merge .badge.danger {
+        background: #fee2e2;
+      }
+
+      .gen-merge .button-group {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+
+      .gen-merge .btn {
+        background: var(--accent);
+        border: none;
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+
+      .gen-merge .btn.ghost {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+      }
+
+      body.dark .gen-merge .btn.ghost {
+        border-color: var(--dark-border);
+        color: var(--dark-text);
+      }
+
+      .gen-merge .small {
+        font-size: 12px;
+        padding: 6px 8px;
+      }
+
+      .gen-merge .files {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .gen-merge .file-row {
+        background: #fbfcfe;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        overflow-x: auto;
+      }
+
+      body.dark .gen-merge .file-row {
+        background: var(--dark-input);
+        border-color: var(--dark-border);
+        color: var(--dark-text);
+      }
+
+      .gen-merge .cm-editor {
+        height: 200px;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+
+      .gen-merge .preview {
+        white-space: pre-wrap;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        background: #fafafa;
+        padding: 12px;
+        border-radius: 8px;
+        max-height: 520px;
+        overflow: auto;
+        border: 1px solid var(--border);
+      }
+
+      body.dark .gen-merge .preview {
+        background: var(--dark-input);
+        border-color: var(--dark-border);
+        color: var(--dark-text);
+      }
+
+      .gen-merge .muted {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      body.dark .gen-merge .muted {
+        color: #9ca3af;
+      }
+
+      .gen-merge .dup-list {
+        max-height: 160px;
+        overflow: auto;
+        background: #fbfcfe;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+      }
+
+      body.dark .gen-merge .dup-list {
+        background: var(--dark-input);
+        border-color: var(--dark-border);
+      }
+
+      .gen-merge .footer {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+
+      .gen-merge .offline-indicator {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .gen-merge .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      .gen-merge .dot.online {
+        background: #10b981;
+      }
+
+      .gen-merge .dot.offline {
+        background: #ef4444;
+      }
+
+      .gen-merge .radio-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .gen-merge .col {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .gen-merge .file-label {
+        display: inline-block;
+        padding: 6px 8px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      /* =============== RESPONSIVE =============== */
+      @media (max-width: 1200px) {
+        .gen-merge .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .gen-merge .title h1,
+        .gen-merge .title h2 {
+          font-size: 16px;
+        }
+        .gen-merge .btn {
+          flex: 1 1 100%;
+          text-align: center;
+        }
+      }
+    </style>
   </head>
-  <body>
+  <body class="dark">
+    <!-- Default to dark mode -->
     <button id="toggleTheme">🌓 Toggle Theme</button>
-    <h1>🛠️ Claude / V0 Prompt Generator</h1>
 
-    <form class="form-grid">
-      <h2>📝 Screen & Feature Info</h2>
-      <label>Screen Name:</label>
-      <input
-        type="text"
-        id="screenName"
-        placeholder="e.g., CustomerManagement"
-      />
+    <div class="container">
+      <h1>🛠️ Web Dev Prompt Studio</h1>
 
-      <label>Short Feature Description:</label>
-      <input
-        type="text"
-        id="featureDesc"
-        placeholder="e.g., Manage customer/vendor accounts"
-      />
-
-      <label>Required Components (comma-separated):</label>
-      <input
-        type="text"
-        id="components"
-        placeholder="e.g., Table, Filter bar, Modals, Toasts"
-      />
-
-      <label>PocketBase Collections (comma-separated):</label>
-      <input
-        type="text"
-        id="collections"
-        placeholder="e.g., users, tickets, orders"
-      />
-
-      <h2>🧩 Reusables & UI Guidelines</h2>
-      <label
-        >Reusable Components/Services/Hooks to Avoid (comma-separated):</label
-      >
-      <input
-        type="text"
-        id="reusable"
-        placeholder="e.g., OrderCard, useCurrentUser, orderService.js"
-      />
-
-      <label>Custom Design Guidelines:</label>
-      <textarea
-        id="designGuide"
-        placeholder="Enter your custom Tailwind and UI rules here..."
-      ></textarea>
-
-      <label>Role:</label>
-      <select id="role">
-        <option value="admin">Admin</option>
-        <option value="vendor">Vendor</option>
-        <option value="agent">Agent</option>
-        <option value="csr">CSR</option>
-        <option value="customer">Customer</option>
-      </select>
-
-      <h2>🎯 Output</h2>
-      <div class="button-group">
-        <button type="button" onclick="generatePrompt()">
-          ⚙️ Generate Prompt
+      <!-- Tab Navigation -->
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="claude">
+          Claude / V0 Prompt Generator
         </button>
-        <button type="button" onclick="copyToClipboard()">📋 Copy</button>
-        <button type="button" onclick="savePrompt()">💾 Save</button>
-        <button type="button" onclick="loadPrompt()">📂 Load</button>
-        <button type="button" onclick="downloadPrompt()">
-          ⬇️ Export as .md
+        <button class="tab-btn" data-tab="merge">
+          Enterprise AI Merge Builder
         </button>
+        <button class="tab-btn" data-tab="add">Add Module</button>
       </div>
-      <textarea
-        id="output"
-        placeholder="Generated prompt will appear here..."
-      ></textarea>
-    </form>
 
-    <script src="app.js"></script>
+      <!-- ========== TAB 1: Claude Prompt Generator ========== -->
+      <div id="claude" class="tab-content active gen-claude">
+        <form class="form-grid">
+          <h2>📝 Screen & Feature Info</h2>
+          <label>Screen Name:</label>
+          <input
+            type="text"
+            id="screenName"
+            placeholder="e.g., CustomerManagement"
+          />
+
+          <label>Short Feature Description:</label>
+          <input
+            type="text"
+            id="featureDesc"
+            placeholder="e.g., Manage customer/vendor accounts"
+          />
+
+          <label>Required Components (comma-separated):</label>
+          <input
+            type="text"
+            id="components"
+            placeholder="e.g., Table, Filter bar, Modals, Toasts"
+          />
+
+          <label>PocketBase Collections (comma-separated):</label>
+          <input
+            type="text"
+            id="collections"
+            placeholder="e.g., users, tickets, orders"
+          />
+
+          <h2>🧩 Reusables & UI Guidelines</h2>
+          <label
+            >Reusable Components/Services/Hooks to Avoid
+            (comma-separated):</label
+          >
+          <input
+            type="text"
+            id="reusable"
+            placeholder="e.g., OrderCard, useCurrentUser, orderService.js"
+          />
+
+          <label>Custom Design Guidelines:</label>
+          <textarea
+            id="designGuide"
+            placeholder="Enter your custom Tailwind and UI rules here..."
+          ></textarea>
+
+          <label>Role:</label>
+          <select id="role">
+            <option value="admin">Admin</option>
+            <option value="vendor">Vendor</option>
+            <option value="agent">Agent</option>
+            <option value="csr">CSR</option>
+            <option value="customer">Customer</option>
+          </select>
+
+          <h2>🎯 Output</h2>
+          <div class="button-group">
+            <button type="button" onclick="generatePrompt()">
+              ⚙️ Generate Prompt
+            </button>
+            <button type="button" onclick="copyToClipboard()">📋 Copy</button>
+            <button type="button" onclick="savePrompt()">💾 Save</button>
+            <button type="button" onclick="loadPrompt()">📂 Load</button>
+            <button type="button" onclick="downloadPrompt()">
+              ⬇️ Export as .md
+            </button>
+          </div>
+          <textarea
+            id="output"
+            placeholder="Generated prompt will appear here..."
+          ></textarea>
+        </form>
+      </div>
+
+      <!-- ========== TAB 2: Enterprise AI Merge Builder ========== -->
+      <div id="merge" class="tab-content gen-merge">
+        <header class="header">
+          <div class="title">
+            <h2>Enterprise AI Merge Prompt Builder — Offline First</h2>
+            <p class="lead">
+              Works fully offline once loaded (PWA-ready). Saves sessions
+              locally, supports export/import, and caches assets.
+            </p>
+          </div>
+          <div class="toolbar">
+            <div class="offline-indicator" id="network-status">
+              <span class="dot" id="dot"></span>
+              <span id="net-text" class="muted">checking…</span>
+            </div>
+            <button id="generate" class="btn">Generate Prompt</button>
+          </div>
+        </header>
+
+        <main class="layout">
+          <section class="left-col">
+            <div class="card">
+              <label for="project-name"
+                >Target project / repo name (optional)</label
+              >
+              <input
+                id="project-name"
+                placeholder="e.g., orders-service, frontend-app"
+              />
+
+              <div class="input-group">
+                <label>Drag & drop files here or click to upload</label>
+                <div id="file-drop" class="file-drop">
+                  Drop files (.js, .py, .java, .go, .cs, .ts) or click to choose
+                </div>
+                <input id="file-input" type="file" multiple hidden />
+              </div>
+
+              <div class="row">
+                <label>Preset template</label>
+                <select id="preset">
+                  <option value="mild">
+                    Mild Merge — minimal restructuring
+                  </option>
+                  <option value="moderate">
+                    Moderate Merge — reorganize where beneficial
+                  </option>
+                  <option value="refactor">
+                    Full Refactor — reorganize for clarity & performance
+                  </option>
+                </select>
+                <label class="checkbox-inline">
+                  <input type="checkbox" id="advanced-mode" checked /> Show
+                  advanced options
+                </label>
+              </div>
+
+              <div class="stats">
+                <div class="stat">
+                  <span class="muted">Files:</span>
+                  <span id="file-count" class="badge">0</span>
+                </div>
+                <div class="stat">
+                  <span class="muted">Total chars:</span>
+                  <span id="char-count" class="badge">0</span>
+                </div>
+                <div class="stat">
+                  <span class="muted">Est. tokens:</span>
+                  <span id="token-estimate" class="badge ok">0</span>
+                </div>
+              </div>
+
+              <!-- Replace the existing "Options" and "Conflict" sections with this -->
+
+              <div id="advanced-section">
+                <div class="card-section">
+                  <label>Conflict resolution policy</label>
+                  <div class="radio-row">
+                    <label
+                      ><input
+                        type="radio"
+                        name="conflict"
+                        value="most_secure"
+                        checked
+                      />
+                      Prefer Most Secure</label
+                    >
+                    <label
+                      ><input type="radio" name="conflict" value="newest" />
+                      Prefer Newest</label
+                    >
+                    <label
+                      ><input type="radio" name="conflict" value="oldest" />
+                      Prefer Oldest</label
+                    >
+                  </div>
+                  <div class="muted small">
+                    This instructs the AI how to choose between conflicting
+                    implementations.
+                  </div>
+                </div>
+
+                <div class="card-section">
+                  <label>Options</label>
+                  <div class="col">
+                    <label
+                      ><input type="checkbox" id="preserve-comments" checked />
+                      Preserve original comments</label
+                    >
+                    <label
+                      ><input type="checkbox" id="remove-duplicates" checked />
+                      Eliminate duplicate logic</label
+                    >
+                    <label
+                      ><input type="checkbox" id="keep-structure" checked />
+                      Keep existing structure</label
+                    >
+                    <label
+                      ><input type="checkbox" id="allow-ts" /> Allow
+                      TypeScript</label
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <div class="card-section">
+                <label for="extra-instructions"
+                  >Extra instructions (optional)</label
+                >
+                <textarea
+                  id="extra-instructions"
+                  placeholder="e.g., target runtime Node 18, use ESM modules..."
+                ></textarea>
+              </div>
+
+              <div class="button-group">
+                <button id="save-session" class="btn ghost small">
+                  Save session
+                </button>
+                <button id="load-session" class="btn ghost small">
+                  Load session
+                </button>
+                <button id="export-session" class="btn small">
+                  Export .json
+                </button>
+                <label for="import-session" class="btn ghost small file-label"
+                  >Import</label
+                >
+                <input
+                  id="import-session"
+                  type="file"
+                  accept="application/json"
+                  hidden
+                />
+              </div>
+            </div>
+
+            <div class="card" style="margin-top: 12px">
+              <label>Duplicate Detection Preview</label>
+              <div class="muted">
+                Scans added files for exact or near-exact duplicate function
+                implementations. Use checkboxes to accept or ignore
+                auto-consolidation.
+              </div>
+              <div id="dup-list" class="dup-list"></div>
+              <div class="button-group" style="margin-top: 8px">
+                <button id="re-scan" class="btn ghost small">Re-scan</button>
+                <button id="apply-duplicates" class="btn small">
+                  Auto-consolidate
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <aside class="right-col">
+            <div class="card">
+              <label>Files (editable)</label>
+              <div id="files" class="files"></div>
+              <div class="button-group" style="margin-top: 8px">
+                <button id="add-file" class="btn">+ Add empty file</button>
+                <button id="clear-files" class="btn ghost">Clear all</button>
+                <button id="download-session" class="btn ghost">
+                  Save session as .json
+                </button>
+              </div>
+            </div>
+
+            <div class="card">
+              <label>Generated Prompt</label>
+              <div id="preview" class="preview">
+                Click "Generate Prompt" to build an AI-ready instruction using
+                your options and files.
+              </div>
+              <div class="button-group" style="margin-top: 8px">
+                <button id="copy" class="btn">Copy</button>
+                <button id="download" class="btn ghost">Download .txt</button>
+                <button id="copy-md" class="btn ghost">Copy as Markdown</button>
+              </div>
+              <div class="footer">
+                Output will include directives about preserving logic,
+                duplications, conflict policy, and token estimates.
+              </div>
+            </div>
+          </aside>
+        </main>
+      </div>
+
+      <!-- ========== TAB 3: Add Module ========== -->
+      <div id="add" class="tab-content">
+        <div class="add-module">
+          <h3>Want to add a new generator?</h3>
+          <p>Use the module system to plug in more tools.</p>
+          <button
+            id="add-module-btn"
+            class="btn"
+            onclick="alert('Module registration not implemented yet, leave suggestions at jeremiah-tani.vercel.app')"
+          >
+            Register New Module
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="codemirror.js"></script>
+    <script src="javascript.js"></script>
+    <script src="python.js"></script>
+
     <script>
+      // ========== Module Registration & Tab System ==========
+      window.GeneratorModules = {
+        modules: {},
+        register(id, initFn, meta = {}) {
+          this.modules[id] = { init: initFn, meta, initialized: false };
+        },
+        async load(id) {
+          const mod = this.modules[id];
+          if (!mod) return console.warn(`Module ${id} not found`);
+          if (!mod.initialized) {
+            await mod.init();
+            mod.initialized = true;
+          }
+        },
+        list() {
+          return Object.keys(this.modules);
+        },
+      };
+
+      // ========== Tab Switching with Lazy Load ==========
+      document.addEventListener("DOMContentLoaded", () => {
+        const tabButtons = document.querySelectorAll(".tab-btn");
+        const tabContents = document.querySelectorAll(".tab-content");
+
+        tabButtons.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            // Hide all
+            tabButtons.forEach((b) => b.classList.remove("active"));
+            tabContents.forEach((c) => c.classList.remove("active"));
+
+            // Show selected
+            btn.classList.add("active");
+            const tabId = btn.getAttribute("data-tab");
+            const tab = document.getElementById(tabId);
+            tab.classList.add("active");
+
+            // Lazy-load module if needed
+            if (tabId === "merge" && !window.mergeBuilderLoaded) {
+              initMergeBuilder();
+              window.mergeBuilderLoaded = true;
+            }
+          });
+        });
+      });
+
+      // ========== Theme Toggle ==========
       document.getElementById("toggleTheme").onclick = () => {
         document.body.classList.toggle("dark");
       };
+
+      // ===================================================
+      // ✅ MODULE 1: CLAUDE PROMPT GENERATOR (FULL LOGIC)
+      // ===================================================
+      function generatePrompt() {
+        const screen = document.getElementById("screenName").value.trim();
+        const feature = document.getElementById("featureDesc").value.trim();
+        const comps = document.getElementById("components").value.trim();
+        const collections = document.getElementById("collections").value.trim();
+        const reusable = document.getElementById("reusable").value.trim();
+        const designGuide = document.getElementById("designGuide").value.trim();
+        const role = document.getElementById("role").value;
+
+        const prompt = `
+You are an expert frontend engineer. I want you to build the **${screen}** screen in **React with Tailwind CSS**.
+
+🔧 Folder Structure for the ${
+          role.charAt(0).toUpperCase() + role.slice(1)
+        } Section:
+- /${role}
+  - /components → Shared components (e.g., Modal, Toast, Card, Table, etc.)
+  - /contexts → React contexts if needed
+  - /hooks → Custom React hooks
+  - /pages → The main screen/page component
+  - /services → PocketBase integration logic (API calls)
+  - index.js → Exports everything
+
+📊 Requirements:
+- DO NOT combine everything in a single file.
+- EACH component (${comps}) must be in its own file under \`/${role}/components\`.
+- Place the screen's main page logic in \`/${role}/pages/${screen}.jsx\`
+- Use \`/${role}/hooks\` or \`/${role}/services\` as needed.
+- Use named exports and proper imports.
+
+💡 Screen Summary:
+- Role: **${role}**
+- Screen: **${screen}**
+- Feature: **${feature}**
+- Required Components: **${comps}**
+- Use PocketBase collections: **${collections}**
+- Simulate the data fetch with async hooks in \`/${role}/services\`
+
+🎨 UI Guidelines (Manually Specified):
+${designGuide}
+
+📦 Reuse Guidance (Manually Listed):
+${reusable}
+
+📦 Output:
+- Output each component or file one at a time in this format:
+
+\`\`\`jsx
+📄 File: /${role}/components/ComponentName.jsx
+[code here]
+\`\`\`
+
+⚠️ Do NOT include all code in a single file. Split components, pages, services, and hooks into separate code blocks, each with a clear file path.
+
+✅ Start by outputting \`/${role}/pages/${screen}.jsx\` and one shared component like a Modal or Table. Wait for feedback before continuing.
+`;
+
+        document.getElementById("output").value = prompt.trim();
+      }
+
+      function copyToClipboard() {
+        const output = document.getElementById("output");
+        navigator.clipboard.writeText(output.value).then(() => {
+          alert("Prompt copied to clipboard!");
+        });
+      }
+
+      function savePrompt() {
+        const values = {
+          screen: document.getElementById("screenName").value,
+          feature: document.getElementById("featureDesc").value,
+          comps: document.getElementById("components").value,
+          collections: document.getElementById("collections").value,
+          reusable: document.getElementById("reusable").value,
+          designGuide: document.getElementById("designGuide").value,
+          role: document.getElementById("role").value,
+        };
+        localStorage.setItem("savedPrompt", JSON.stringify(values));
+        alert("Prompt saved!");
+      }
+
+      function loadPrompt() {
+        const saved = JSON.parse(localStorage.getItem("savedPrompt"));
+        if (saved) {
+          document.getElementById("screenName").value = saved.screen;
+          document.getElementById("featureDesc").value = saved.feature;
+          document.getElementById("components").value = saved.comps;
+          document.getElementById("collections").value = saved.collections;
+          document.getElementById("reusable").value = saved.reusable;
+          document.getElementById("designGuide").value = saved.designGuide;
+          document.getElementById("role").value = saved.role;
+          alert("Prompt loaded!");
+        } else {
+          alert("No saved prompt found.");
+        }
+      }
+
+      function downloadPrompt() {
+        const blob = new Blob([document.getElementById("output").value], {
+          type: "text/markdown",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "prompt.md";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      // Register Module
+      GeneratorModules.register("claude", () => {
+        console.log("Claude Generator initialized");
+      });
+
+      // ===================================================
+      // ✅ MODULE 2: ENTERPRISE AI MERGE BUILDER (FULL LOGIC)
+      // Injected and fixed for tabbed context
+      // ===================================================
+      async function initMergeBuilder() {
+        // Only run once
+        if (window.mergeBuilderInitialized) return;
+        window.mergeBuilderInitialized = true;
+
+        try {
+          // DOM References (scoped to merge tab)
+          const $ = (id) => document.getElementById(id);
+          const filesEl = $("files");
+          const fileInput = $("file-input");
+          const fileDrop = $("file-drop");
+          const addFileBtn = $("add-file");
+          const clearFilesBtn = $("clear-files");
+          const generateBtn = $("generate");
+          const previewEl = $("preview");
+          const dupListEl = $("dup-list");
+          const reScanBtn = $("re-scan");
+          const applyDupBtn = $("apply-duplicates");
+          const fileCountEl = $("file-count");
+          const charCountEl = $("char-count");
+          const tokenEstEl = $("token-estimate");
+          const dot = $("dot");
+          const netText = $("net-text");
+
+          // State
+          let editors = [];
+
+          // ---------- Network indicator ----------
+          function updateNetwork() {
+            if (navigator.onLine) {
+              dot.className = "dot online";
+              netText.textContent = "online";
+            } else {
+              dot.className = "dot offline";
+              netText.textContent = "offline (working from local cache)";
+            }
+          }
+          window.addEventListener("online", updateNetwork);
+          window.addEventListener("offline", updateNetwork);
+          updateNetwork();
+
+          // ---------- IndexedDB tiny wrapper ----------
+          function idbOpen(name, version = 1, upgradeCb) {
+            return new Promise((res, rej) => {
+              const req = indexedDB.open(name, version);
+              req.onupgradeneeded = (e) =>
+                upgradeCb && upgradeCb(e.target.result);
+              req.onsuccess = () => res(req.result);
+              req.onerror = () => rej(req.error);
+            });
+          }
+
+          // ✅ Safe idbGet — handles missing object stores
+          async function idbGet(dbName, store, key) {
+            try {
+              // Open DB with upgrade handler that creates store if missing
+              const db = await idbOpen(dbName, 1, (db) => {
+                if (!db.objectStoreNames.contains(store)) {
+                  console.log(`Creating object store: ${store}`);
+                  db.createObjectStore(store);
+                }
+              });
+
+              const tx = db.transaction(store, "readonly");
+              const st = tx.objectStore(store);
+              const r = st.get(key);
+
+              return await new Promise((res, rej) => {
+                r.onsuccess = () => res(r.result);
+                r.onerror = () => rej(r.error);
+              });
+            } catch (err) {
+              // Handle known IndexedDB errors gracefully
+              if (
+                err.name === "NotFoundError" ||
+                err.message?.includes("not a known object store") ||
+                err.message?.includes("Object store not created")
+              ) {
+                console.warn(
+                  `[IndexedDB] Object store '${store}' not found. No saved data.`
+                );
+                return null;
+              }
+              console.error("[IndexedDB] Unexpected get error:", err);
+              return null;
+            }
+          }
+
+          async function idbPut(dbName, store, obj, key) {
+            const db = await idbOpen(dbName, 1, (db) => {
+              if (!db.objectStoreNames.contains(store)) {
+                db.createObjectStore(store);
+              }
+            });
+            return new Promise((res, rej) => {
+              const tx = db.transaction(store, "readwrite");
+              const st = tx.objectStore(store);
+              const r = st.put(obj, key);
+              r.onsuccess = () => res(r.result);
+              r.onerror = () => rej(r.error);
+            });
+          }
+
+          // Advanced options toggle
+          const advancedModeToggle = $("advanced-mode");
+          const advancedSection = document.getElementById("advanced-section");
+
+          function updateAdvancedVisibility() {
+            if (advancedModeToggle && advancedSection) {
+              if (advancedModeToggle.checked) {
+                advancedSection.classList.remove("hidden");
+              } else {
+                advancedSection.classList.add("hidden");
+              }
+            }
+          }
+
+          // Initial state
+          updateAdvancedVisibility();
+
+          // Listen for changes
+          advancedModeToggle?.addEventListener(
+            "change",
+            updateAdvancedVisibility
+          );
+
+          // Safe auto-load: won't crash if no DB or store
+          (async () => {
+            try {
+              const data = await idbGet(
+                "merge_builder_db",
+                "sessions",
+                "latest"
+              );
+              if (data) {
+                // Optionally auto-load, or just notify
+                console.log(
+                  "Saved session found. User can click 'Load Session' to restore."
+                );
+              }
+            } catch (e) {
+              console.warn("Auto-load check failed (safe)", e);
+            }
+          })();
+
+          // ---------- Utilities ----------
+          function escapeHtml(s) {
+            return (s || "")
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "<")
+              .replace(/>/g, ">")
+              .replace(/"/g, "&quot;");
+          }
+          function downloadFile(name, content, type = "text/plain") {
+            const blob = new Blob([content], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+          }
+          function djb2(str) {
+            let h = 5381;
+            for (let i = 0; i < str.length; i++)
+              h = (h << 5) + h + str.charCodeAt(i);
+            return h >>> 0;
+          }
+
+          // ---------- File editor handling ----------
+          function addFile(name = "", content = "") {
+            const id = "f" + Math.random().toString(36).slice(2, 9);
+            const row = document.createElement("div");
+            row.className = "file-row";
+            row.id = id;
+            row.innerHTML = `
+          <div class="file-head">
+            <input type="text" class="fname" placeholder="filename (e.g., src/utils/auth.js)" value="${escapeHtml(
+              name
+            )}" />
+            <div class="file-actions">
+              <button class="small ghost" data-remove>Remove</button>
+              <button class="small ghost" data-download>Download</button>
+            </div>
+          </div>
+          <div class="cm-editor"><textarea></textarea></div>
+        `;
+            filesEl.appendChild(row);
+            const fname = row.querySelector(".fname");
+            const ta = row.querySelector("textarea");
+            ta.value = content;
+
+            let cm = null;
+            try {
+              if (window.CodeMirror) {
+                cm = CodeMirror.fromTextArea(ta, {
+                  lineNumbers: true,
+                  mode: "javascript",
+                });
+                cm.setSize("100%", 200);
+                const ext = (name.split(".").pop() || "").toLowerCase();
+                if (ext === "py") cm.setOption("mode", "python");
+                if (ext === "ts") cm.setOption("mode", "javascript");
+              } else {
+                ta.style.width = "100%";
+                ta.style.height = "200px";
+              }
+            } catch (e) {
+              ta.style.width = "100%";
+              ta.style.height = "200px";
+              console.warn("Editor init failed", e);
+            }
+
+            editors.push({ id, row, fname, cm, ta });
+
+            row.querySelector("[data-remove]").addEventListener("click", () => {
+              row.remove();
+              editors = editors.filter((e) => e.id !== id);
+              updateStats();
+              scanDuplicates();
+            });
+            row
+              .querySelector("[data-download]")
+              .addEventListener("click", () =>
+                downloadFile(fname.value || "file.txt", getEditorValue(id))
+              );
+
+            if (cm)
+              cm.on("change", () => {
+                updateStats();
+                scanDuplicates();
+              });
+            fname.addEventListener("input", () => {
+              updateStats();
+              scanDuplicates();
+            });
+
+            updateStats();
+            return id;
+          }
+
+          function getEditorValue(id) {
+            const ed = editors.find((e) => e.id === id);
+            if (!ed) return "";
+            return ed.cm ? ed.cm.getValue() : ed.ta.value;
+          }
+
+          function collectFiles() {
+            return editors
+              .map((e) => ({
+                filename: e.fname.value.trim() || "unnamed_" + e.id,
+                content: e.cm ? e.cm.getValue() : e.ta.value,
+              }))
+              .filter((f) => f.content && f.content.length > 0);
+          }
+
+          // ---------- Stats & language ----------
+          function updateStats() {
+            const files = collectFiles();
+            const chars = files.reduce((s, f) => s + f.content.length, 0);
+            const tokens = Math.ceil(chars / 4);
+            fileCountEl.textContent = files.length;
+            charCountEl.textContent = chars;
+            tokenEstEl.textContent = tokens;
+            tokenEstEl.className =
+              "badge " +
+              (tokens > 32000 ? "danger" : tokens > 16000 ? "" : "ok");
+          }
+
+          function detectLanguage(files) {
+            const exts = {};
+            files.forEach((f) => {
+              const e = (f.filename.split(".").pop() || "").toLowerCase();
+              exts[e] = (exts[e] || 0) + 1;
+            });
+            const keys = Object.keys(exts);
+            if (keys.length === 1) return keys[0];
+            if (keys.includes("js") || keys.includes("ts")) return "javascript";
+            if (keys.includes("py")) return "python";
+            return "mixed";
+          }
+
+          // ---------- Duplicate detection ----------
+          function extractFunctions(content) {
+            if (!content) return [];
+            const lines = content.split("\n"),
+              items = [],
+              buffer = [];
+            let collecting = false;
+            const pushBuffer = () => {
+              if (buffer.length) {
+                items.push(buffer.join("\n").trim());
+                buffer.length = 0;
+              }
+            };
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i],
+                t = line.trim();
+              const isDef =
+                t.startsWith("def ") ||
+                t.startsWith("class ") ||
+                t.startsWith("function ") ||
+                (t.indexOf(")") !== -1 &&
+                  (t.startsWith("const ") ||
+                    t.startsWith("let ") ||
+                    t.startsWith("var ")));
+              if (isDef) {
+                if (collecting) pushBuffer();
+                collecting = true;
+                buffer.push(line);
+                continue;
+              }
+              if (collecting) {
+                if (t === "") {
+                  pushBuffer();
+                  collecting = false;
+                } else buffer.push(line);
+              }
+            }
+            if (collecting) pushBuffer();
+            return items;
+          }
+
+          function similarity(a, b) {
+            if (!a || !b) return 0;
+            const longer = a.length > b.length ? a : b;
+            const shorter = a.length > b.length ? b : a;
+            const longerLength = longer.length;
+            if (longerLength === 0) return 1;
+            return (
+              (longerLength - levenshtein(longer, shorter)) /
+              parseFloat(longerLength)
+            );
+          }
+
+          function levenshtein(a, b) {
+            const matrix = [];
+            let i, j;
+            if (!a.length) return b.length;
+            if (!b.length) return a.length;
+
+            for (i = 0; i <= b.length; i++) matrix[i] = [i];
+            for (j = 0; j <= a.length; j++) matrix[0][j] = j;
+
+            for (i = 1; i <= b.length; i++) {
+              for (j = 1; j <= a.length; j++) {
+                if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                  matrix[i][j] = matrix[i - 1][j - 1];
+                } else {
+                  matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1,
+                    Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1)
+                  );
+                }
+              }
+            }
+            return matrix[b.length][a.length];
+          }
+
+          function scanDuplicates() {
+            const files = collectFiles();
+            const funcData = [];
+
+            files.forEach((f) => {
+              const funcs = extractFunctions(f.content);
+              funcs.forEach((fn) => {
+                funcData.push({ file: f.filename, snippet: fn });
+              });
+            });
+
+            const groups = [];
+            const visited = new Set();
+
+            for (let i = 0; i < funcData.length; i++) {
+              if (visited.has(i)) continue;
+              const group = [funcData[i]];
+              visited.add(i);
+
+              for (let j = i + 1; j < funcData.length; j++) {
+                if (visited.has(j)) continue;
+                const score = similarity(
+                  funcData[i].snippet,
+                  funcData[j].snippet
+                );
+                if (score >= 0.85) {
+                  group.push(funcData[j]);
+                  visited.add(j);
+                }
+              }
+
+              if (group.length > 1) groups.push(group);
+            }
+
+            dupListEl.innerHTML = "";
+            if (groups.length === 0) {
+              dupListEl.innerHTML =
+                '<div class="muted">No obvious duplicates found.</div>';
+              return groups;
+            }
+
+            groups.forEach((g, gi) => {
+              const div = document.createElement("div");
+              div.className = "dup-group";
+              const filesStr = g.map((x) => x.file).join(", ");
+              const label = document.createElement("label");
+              label.className = "dup-label";
+              label.innerHTML = `<input type="checkbox" data-group="${gi}" checked /> Consolidate near-duplicate found in ${filesStr}`;
+              const pre = document.createElement("pre");
+              pre.className = "dup-snippet";
+              pre.textContent = g[0].snippet.substring(0, 1000);
+              div.appendChild(label);
+              div.appendChild(pre);
+              dupListEl.appendChild(div);
+            });
+
+            return groups;
+          }
+
+          function applyAutoConsolidation() {
+            const groups = scanDuplicates();
+            const checkboxes = Array.from(
+              dupListEl.querySelectorAll("input[type=checkbox]")
+            );
+            checkboxes.forEach((cb, i) => {
+              if (!cb.checked) return;
+              const group = groups[i];
+              if (!group) return;
+              const canonical = group[0].snippet;
+              let target = editors.find((e) =>
+                (e.fname.value || "").endsWith("duplicates.js")
+              );
+              if (!target) {
+                addFile(
+                  "merged/duplicates.js",
+                  "// consolidated duplicates file\n"
+                );
+                target = editors[editors.length - 1];
+              }
+              const append = `\n// Consolidated from: ${group
+                .map((x) => x.file)
+                .join(", ")}\n${canonical}\n`;
+              if (target.cm)
+                target.cm.replaceRange(append, { line: target.cm.lineCount() });
+              else target.ta.value += append;
+              group.slice(1).forEach((gitem) => {
+                const ed = editors.find(
+                  (e) => (e.fname.value || "") === gitem.file
+                );
+                if (!ed) return;
+                const v = ed.cm ? ed.cm.getValue() : ed.ta.value;
+                const nv = v.replace(
+                  gitem.snippet,
+                  "// removed duplicate consolidated into merged/duplicates.js\n/* original snippet removed */\n"
+                );
+                if (ed.cm) ed.cm.setValue(nv);
+                else ed.ta.value = nv;
+              });
+            });
+            updateStats();
+            scanDuplicates();
+          }
+
+          // ---------- Prompt builder ----------
+          function buildPrompt() {
+            const projectName = $("project-name").value.trim();
+            const preset = $("preset").value;
+            const preserveComments = $("preserve-comments").checked;
+            const removeDuplicates = $("remove-duplicates").checked;
+            const keepStructure = $("keep-structure").checked;
+            const allowTs = $("allow-ts").checked;
+            const extra = $("extra-instructions").value.trim();
+            const conflict = document.querySelector(
+              'input[name="conflict"]:checked'
+            ).value;
+            const files = collectFiles();
+            const langDetected = detectLanguage(files);
+            const chars = files.reduce((s, f) => s + f.content.length, 0);
+            const tokens = Math.ceil(chars / 4);
+            const lines = [];
+            lines.push(
+              "You are an expert senior software engineer and code reviewer."
+            );
+            lines.push(
+              "Task: Merge the following code files into a single, coherent, enterprise-grade codebase for the target project."
+            );
+            if (projectName) lines.push("Target project name: " + projectName);
+            lines.push(
+              `Preset: ${
+                preset === "mild"
+                  ? "Mild Merge — minimal restructuring"
+                  : preset === "moderate"
+                  ? "Moderate Merge — reorganize where beneficial"
+                  : "Full Refactor — reorganize for clarity & performance"
+              }`
+            );
+            lines.push("Mandatory rules:");
+            lines.push(
+              "1) PRESERVE ALL vital logic and business behavior present in the inputs. Do NOT exclude or remove any essential or unique functionality."
+            );
+            lines.push(
+              '2) Eliminate duplicate logic by consolidating redundant implementations into a single canonical implementation only if "Eliminate duplicate logic" is enabled.'
+            );
+            lines.push(
+              "3) Keep clear module/file structure and separation of concerns. If reorganizing, explain the new structure in a README and map original filenames to their new locations."
+            );
+            lines.push("Model & tokens:");
+            lines.push(
+              '6) Types: Do NOT introduce TypeScript unless "Allow TypeScript" is enabled. (Allow TypeScript: ' +
+                (allowTs ? "YES" : "NO") +
+                ")."
+            );
+            lines.push(
+              "7) Conflict resolution: " +
+                (conflict === "most_secure"
+                  ? "Prefer the most secure implementation."
+                  : conflict === "newest"
+                  ? "Prefer the newest implementation."
+                  : "Prefer the oldest implementation.")
+            );
+            lines.push(
+              "8) SECURITY & PERFORMANCE: flag and fix obvious security issues, avoid insecure patterns, prefer readable efficient implementations."
+            );
+            if (extra) lines.push("Additional instructions: " + extra);
+            if (langDetected)
+              lines.push("Detected primary language: " + langDetected + ".");
+            lines.push("--- BEGIN FILES ---");
+            files.forEach((f, idx) => {
+              lines.push(`### FILE ${idx + 1}: ${f.filename} ###`);
+              lines.push(
+                "/// START OF FILE CONTENT (do not remove markers) ///"
+              );
+              lines.push(f.content);
+              lines.push("/// END OF FILE CONTENT ///");
+            });
+            lines.push("--- END FILES ---");
+            lines.push("Deliverables:");
+            lines.push(
+              "- A single merged codebase in the requested language with a clear folder structure."
+            );
+            lines.push(
+              "- README describing the new structure, decisions, and run/tests instructions."
+            );
+            lines.push(
+              "- Inline comments that explain non-obvious logic and note where duplicates were consolidated and why."
+            );
+            lines.push(
+              "- A change-log mapping original filenames to new locations."
+            );
+            lines.push(
+              "Strict constraint: DO NOT remove unique behavior or logic from the inputs. Only remove exact or near-exact duplicates by consolidating them with thorough comments and tests."
+            );
+            return lines.join("\n");
+          }
+
+          // ---------- File uploads ----------
+          function handleFileUploads(files) {
+            files.forEach((file) => {
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                addFile(file.name, ev.target.result);
+                scanDuplicates();
+                saveAuto();
+              };
+              reader.readAsText(file);
+            });
+          }
+
+          // ---------- Session persistence ----------
+          const STORAGE_KEY = "merge_builder_session_v1";
+          async function saveSession() {
+            const data = {
+              projectName: $("project-name").value,
+              preset: $("preset").value,
+              advancedMode: $("advanced-mode")
+                ? $("advanced-mode").checked
+                : false,
+              files: collectFiles(),
+              options: {
+                preserveComments: $("preserve-comments").checked,
+                removeDuplicates: $("remove-duplicates").checked,
+                keepStructure: $("keep-structure").checked,
+                allowTs: $("allow-ts").checked,
+                extra: $("extra-instructions").value,
+              },
+              conflict: document.querySelector('input[name="conflict"]:checked')
+                .value,
+              generated: previewEl.textContent,
+            };
+            await idbPut("merge_builder_db", "sessions", data, "latest");
+            alert("Session saved locally");
+          }
+
+          async function loadSession() {
+            const data = await idbGet("merge_builder_db", "sessions", "latest");
+            if (!data) return alert("No saved session found");
+            $("project-name").value = data.projectName || "";
+            $("preset").value = data.preset || "mild";
+            if ($("advanced-mode"))
+              $("advanced-mode").checked = !!data.advancedMode;
+            editors.forEach((e) => e.row.remove());
+            editors = [];
+            (data.files || []).forEach((f) => addFile(f.filename, f.content));
+            if (data.options) {
+              $("preserve-comments").checked = !!data.options.preserveComments;
+              $("remove-duplicates").checked = !!data.options.removeDuplicates;
+              $("keep-structure").checked = !!data.options.keepStructure;
+              $("allow-ts").checked = !!data.options.allowTs;
+              $("extra-instructions").value = data.options.extra || "";
+            }
+            if (data.conflict) {
+              const el = document.querySelector(
+                `input[name="conflict"][value="${data.conflict}"]`
+              );
+              if (el) el.checked = true;
+            }
+            previewEl.textContent = data.generated || "";
+            updateStats();
+            scanDuplicates();
+            alert("Session loaded");
+          }
+
+          // ---------- Auto-save (debounced) ----------
+          let autoSaveTimer = null;
+          function saveAuto() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => {
+              saveSession().catch(() => {});
+            }, 800);
+          }
+
+          // ---------- Events ----------
+          addFileBtn?.addEventListener("click", () => addFile());
+          clearFilesBtn?.addEventListener("click", () => {
+            filesEl.innerHTML = "";
+            editors = [];
+            updateStats();
+            scanDuplicates();
+          });
+
+          fileDrop?.addEventListener("click", () => fileInput.click());
+          fileInput?.addEventListener("change", () => {
+            handleFileUploads(Array.from(fileInput.files));
+            fileInput.value = "";
+          });
+
+          fileDrop?.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            fileDrop.classList.add("dragging");
+          });
+          fileDrop?.addEventListener("dragleave", (e) => {
+            fileDrop.classList.remove("dragging");
+          });
+          fileDrop?.addEventListener("drop", (e) => {
+            e.preventDefault();
+            fileDrop.classList.remove("dragging");
+            handleFileUploads(Array.from(e.dataTransfer.files));
+          });
+
+          reScanBtn?.addEventListener("click", () => scanDuplicates());
+          applyDupBtn?.addEventListener("click", () =>
+            applyAutoConsolidation()
+          );
+
+          generateBtn?.addEventListener("click", () => {
+            previewEl.textContent = buildPrompt();
+            saveAuto();
+          });
+
+          $("download")?.addEventListener("click", () => {
+            const txt = previewEl.textContent || buildPrompt();
+            downloadFile("merge-prompt.txt", txt);
+          });
+
+          $("copy")?.addEventListener("click", async () => {
+            try {
+              await navigator.clipboard.writeText(
+                previewEl.textContent || buildPrompt()
+              );
+              alert("Copied");
+            } catch (e) {
+              alert("Copy failed");
+            }
+          });
+
+          $("copy-md")?.addEventListener("click", async () => {
+            const md = `\n\`\`\`\n${
+              previewEl.textContent || buildPrompt()
+            }\n\`\`\`\n`;
+            try {
+              await navigator.clipboard.writeText(md);
+              alert("Copied as Markdown");
+            } catch (e) {
+              alert("Copy failed");
+            }
+          });
+
+          $("save-session")?.addEventListener("click", () => saveSession());
+          $("load-session")?.addEventListener("click", () => loadSession());
+
+          $("download-session")?.addEventListener("click", () => {
+            const data = {
+              files: collectFiles(),
+              meta: {
+                projectName: $("project-name").value,
+                preset: $("preset").value,
+              },
+            };
+            downloadFile(
+              "merge-builder-session.json",
+              JSON.stringify(data, null, 2),
+              "application/json"
+            );
+          });
+
+          $("export-session")?.addEventListener("click", () => {
+            const data = {
+              files: collectFiles(),
+              meta: {
+                projectName: $("project-name").value,
+                preset: $("preset").value,
+                options: { preserveComments: $("preserve-comments").checked },
+              },
+            };
+            downloadFile(
+              "merge-builder-export.json",
+              JSON.stringify(data, null, 2),
+              "application/json"
+            );
+          });
+
+          $("import-session")?.addEventListener("change", (e) => {
+            const f = e.target.files[0];
+            if (!f) return;
+            const r = new FileReader();
+            r.onload = (ev) => {
+              try {
+                const data = JSON.parse(ev.target.result);
+                if (data.files) {
+                  editors.forEach((e) => e.row.remove());
+                  editors = [];
+                  data.files.forEach((f) => addFile(f.filename, f.content));
+                  updateStats();
+                  scanDuplicates();
+                  alert("Imported");
+                } else alert("Invalid file");
+              } catch (err) {
+                alert("Import failed");
+              }
+            };
+            r.readAsText(f);
+            e.target.value = "";
+          });
+
+          // Initial file
+          addFile("src/index.js", "// paste or drop files to begin\n");
+          scanDuplicates();
+
+          // Load session
+          (async () => {
+            try {
+              await loadSession();
+            } catch (e) {
+              console.warn("Auto-load failed", e);
+            }
+          })();
+
+          GeneratorModules.register("merge", () => {
+            console.log("Merge Builder initialized");
+          });
+        } catch (error) {
+          console.error("Failed to initialize Merge Builder:", error);
+          alert("Error initializing Merge Builder. Check console.");
+        }
+      }
+
+      // Register module (will be loaded on tab switch)
+      GeneratorModules.register("merge", initMergeBuilder);
+    </script>
+    <script>
+      // ---------- Service Worker Registration (Fixed) ----------
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("sw.js")
+            .then((reg) => {
+              console.log("Service Worker registered:", reg);
+            })
+            .catch((err) => {
+              console.error("Service Worker registration failed:", err);
+            });
+        });
+      }
     </script>
   </body>
 </html>
