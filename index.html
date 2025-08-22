@@ -926,7 +926,7 @@
         const role = document.getElementById("role").value;
 
         const prompt = `
-You are an expert frontend engineer. I want you to build the **${screen}** screen in **React with Tailwind CSS**.
+You are an expert frontend engineer. I want you to build the **${screen}** screen in **React with Tailwind CSS**. All logics and components must be production-ready enterprise-grade not simulated placeholder codes. Use lucide-react as the default ui component library.
 
 🔧 Folder Structure for the ${
           role.charAt(0).toUpperCase() + role.slice(1)
@@ -952,7 +952,7 @@ You are an expert frontend engineer. I want you to build the **${screen}** scree
 - Feature: **${feature}**
 - Required Components: **${comps}**
 - Use PocketBase collections: **${collections}**
-- Simulate the data fetch with async hooks in \`/${role}/services\`
+- Implement actual enterprise-grade data fetching using pocketbase with async hooks in \`/${role}/services\`
 
 🎨 UI Guidelines (Manually Specified):
 ${designGuide}
@@ -968,7 +968,7 @@ ${reusable}
 [code here]
 \`\`\`
 
-⚠️ Do NOT include all code in a single file. Split components, pages, services, and hooks into separate code blocks, each with a clear file path.
+⚠️ Do NOT include all code in a single file. Split components, pages, services, and hooks into separate code blocks, each with a clear file path. Do not use typescript unless explictly instructed.
 
 ✅ Start by outputting \`/${role}/pages/${screen}.jsx\` and one shared component like a Modal or Table. Wait for feedback before continuing.
 `;
