@@ -235,6 +235,7 @@ You are an expert frontend engineer. I want you to build the **${escapeHtml(
 - Place the screen's main page logic in \`/${role}/pages/${screen}.jsx\`
 - Use \`/${role}/hooks\` or \`/${role}/services\` as needed.
 - Use named exports and proper imports.
+- When updating existing components in follow-up responses, use the exact same filename to maintain version history in the code extractor.
 
 💡 Screen Summary:
 - Role: **${role}**
@@ -250,15 +251,18 @@ ${designGuide}
 📦 Reuse Guidance (Manually Listed):
 ${reusable}
 
-📦 Output:
+📦 Output Format:
 - Output each component or file one at a time in this format:
-
-\`\`\`jsx
-📄 File: /${role}/components/ComponentName.jsx
-[code here]
+\`\`\`jsx filename:/${role}/components/ComponentName.jsx
+// Component code here
+// When updating this component later, use the same filename to maintain version history
 \`\`\`
 
-⚠️ Do NOT include all code in a single file. Split components, pages, services, and hooks into separate code blocks, each with a clear file path. Do not use typescript unless explictly instructed.
+⚠️ Important for Versioning:
+- ALWAYS use the \`filename:\` parameter in code blocks
+- Use the exact same filename when updating existing components
+- Only change filenames for major refactors or new components
+- This ensures proper version tracking in the chat code extractor
 
 ✅ Start by outputting \`/${role}/pages/${screen}.jsx\` and one shared component like a Modal or Table. Wait for feedback before continuing.
 `.trim();
@@ -591,11 +595,18 @@ async function initMergeBuilder() {
         "   - README with decisions and usage",
         "   - Change-log mapping original → new files",
         "   - Clear folder structure",
+        "   - Use consistent filenames that match the original structure for proper version tracking",
+        "   - When updating existing components, use the exact same filename to maintain version history",
         preserve && "   - Original comments preserved",
         dedupe && "   - Duplicate logic removed",
         keepStruct && "   - Existing structure preserved",
         allowTS && "   - TypeScript allowed",
         extra && `Extra instructions: ${extra}`,
+        "7) VERSIONING GUIDELINES:",
+        "   - ALWAYS use the `filename:` parameter in code blocks",
+        "   - Use the exact same filename when updating existing components",
+        "   - Only change filenames for major refactors or new components",
+        "   - This ensures proper version tracking in the chat code extractor",
         "--- BEGIN FILES ---",
         ...files.map(
           (f, i) => `### FILE ${i + 1}: ${f.filename} ###\n${f.content}`
@@ -605,6 +616,11 @@ async function initMergeBuilder() {
         "- A single merged codebase with clear structure.",
         "- README with decisions and run instructions.",
         "- Change-log mapping original to new files.",
+        "Output Format:",
+        "```jsx filename:path/to/merged/file.jsx",
+        "// Merged code here",
+        "// Maintain original filenames for version tracking",
+        "```",
       ]
         .filter(Boolean)
         .join("\n");
@@ -708,12 +724,19 @@ INPUTS:
 - Dependency level: ${c.dependencies}
 - Merged service code:
 
-\`\`\`
+\`\`\`jsx filename:${c.serviceName}
 ${c.code}
 \`\`\`
 
 OBJECTIVE:
 Identify all business logic touching PocketBase.
+
+VERSIONING INSTRUCTIONS:
+- When referencing this file in your analysis, use the exact filename: ${
+    c.serviceName
+  }
+- This ensures proper tracking in the version control system
+- If you reference other files, use their full path with the \`filename:\` parameter
 
 DELIVERABLES:
 A. "Business Logic Found"
@@ -726,7 +749,10 @@ DO NOT:
 - Propose hooks
 - Refactor code
 
-Just report what exists.`;
+Just report what exists. When documenting findings, reference files using the format:
+\`\`\`filename:path/to/file.jsx
+// Reference to specific file
+\`\`\``;
 }
 
 function prompt3(c) {
@@ -744,23 +770,44 @@ INPUTS:
   }
 - Code:
 
-\`\`\`
+\`\`\`jsx filename:${c.serviceName}
 ${c.code}
 \`\`\`
 
 OBJECTIVE:
 Detect and extract scheduled logic.
 
+VERSIONING GUIDELINES:
+- When creating new cron job files, use descriptive filenames with the \`filename:\` parameter
+- When modifying existing files, use the exact same filename (${
+    c.serviceName
+  }) to maintain version history
+- All new files should follow the project's folder structure: /${
+    c.module
+  }/services/crons/
+- This ensures proper tracking in the version control system
+
 DELIVERABLES:
 A. "Cron Opportunities"
-B. "Cron Job Code"
-C. "Stripped Service"
+B. "Cron Job Code" (use \`filename:\` parameter for each new cron file)
+C. "Stripped Service" (maintain original filename: ${c.serviceName})
 D. "API Plan"
 E. "Migration"
 
+OUTPUT FORMAT:
+For each deliverable, use the appropriate format:
+\`\`\`filename:path/to/new/cron-job.jsx
+// Cron job code
+\`\`\`
+\`\`\`filename:${c.serviceName}
+// Modified service code (preserve filename for version tracking)
+\`\`\`
+
 DO NOT:
 - Remove existing endpoints
-- Change response shapes`;
+- Change response shapes
+- Use generic filenames like "cron1.js" or "utility.js"
+- Omit the \`filename:\` parameter in code blocks`;
 }
 
 function prompt4(c) {
@@ -777,23 +824,48 @@ INPUTS:
   }
 - Business logic (from Stage 2):
 
-\`\`\`
+\`\`\`${c.language} filename:${c.serviceName}
 ${c.constraints}
 \`\`\`
 
 OBJECTIVE:
 Move logic into pb_hooks.
 
+VERSIONING REQUIREMENTS:
+- When creating new hook files, use the \`filename:\` parameter with proper paths: /pb_hooks/FILENAME.js
+- When modifying the original service, use the exact same filename (${
+    c.serviceName
+  }) to maintain version history
+- All new files must follow the standard structure: /pb_hooks/collections/, /pb_hooks/mails/, /pb_hooks/realtime/, etc.
+- This ensures proper tracking in the version control system
+
 DELIVERABLES:
-1. "Extraction Map"
-2. "Folder Structure"
-3. "pb_hooks Snippet"
-4. "Client Service"
-5. "Migration Steps"
+1. "Extraction Map" - Map showing what logic moves where
+2. "Folder Structure" - Complete structure with all new files
+3. "pb_hooks Snippet" (use \`filename:\` parameter for each hook file)
+4. "Client Service" - Updated client service (maintain original filename: ${
+    c.serviceName
+  })
+5. "Migration Steps" - Step-by-step guide
+
+OUTPUT FORMAT:
+For code deliverables, use the appropriate format:
+\`\`\`js filename:pb_hooks/collections/${c.module}.js
+// Hook implementation
+\`\`\`
+\`\`\`${c.language} filename:${c.serviceName}
+// Updated service code (preserve filename for version tracking)
+\`\`\`
+\`\`\`js filename:pb_hooks/mails/notifications.js
+// Mail hook implementation
+\`\`\`
 
 DO NOT:
 - Harden code
-- Suggest cron jobs`;
+- Suggest cron jobs
+- Use generic filenames like "hook1.js" or "utility.js"
+- Omit the \`filename:\` parameter in code blocks
+- Change the original filename when updating existing services`;
 }
 
 function prompt5(c) {
@@ -811,21 +883,38 @@ INPUTS:
   }
 - Code:
 
-\`\`\`
+\`\`\`filename:${c.serviceName}
 ${c.code}
 \`\`\`
 
 OBJECTIVE:
 Make this code production-ready.
 
+VERSIONING INSTRUCTIONS:
+- When returning refactored code, use the exact same filename (${
+    c.serviceName
+  }) to maintain version history
+- This ensures proper tracking in the version control system and allows comparison between versions
+- All code blocks must include the \`filename:\` parameter
+- Do not change the file extension unless absolutely necessary for the fixes
+
 DELIVERABLES:
-A. "Audit"
-B. "Refactored Code"
-C. "Test Ideas"
+A. "Audit" - Comprehensive code quality assessment
+B. "Refactored Code" (use same filename: ${c.serviceName} for version tracking)
+C. "Test Ideas" - Suggestions for unit and integration tests
+
+OUTPUT FORMAT:
+For code deliverables, use the format:
+\`\`\`filename:${c.serviceName}
+// Refactored code - maintain original filename for version tracking
+\`\`\`
 
 DO NOT:
 - Move logic to backend
-- Suggest cron jobs`;
+- Suggest cron jobs
+- Change the original filename
+- Omit the \`filename:\` parameter in code blocks
+- Modify the behavior of high-dependency code`;
 }
 
 // --- Context ---
